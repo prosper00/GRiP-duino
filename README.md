@@ -6,41 +6,25 @@ NOTES:
 Work-in-progress. Currently status:
 
 -interrupt handlers written using registers for performance. The CLK buttons need an arduino pin with interrupt support. (see source code or notes below for pin assignments)
-
 -supports two devices
-
 -able to read out a bitstream from both
-
 -able to detect the 'sync' pattern, and align the packet correctly
-
 -Implemented change detection - only outputs *changes* to presses, instead of spitting out the whole packet every loop()
-
 -Packets are output to the hardware USART
-
 -Some initial performance optimization. It takes slightly longer to process a packet than it does to collect it, but it's still effectively 'polling' at 500Hz, which is plenty, probably 20x as fast as DOS games would have polled the joystick port. This will probably slow down some as I implement code to parse out the packets.
-
 -No parsing of the packets, other than aligning them to the sync pattern. 
-
 -Once parsing is completed, need to set up keymapping and USB output
-
 -currently planning on mapping buttons to 'keyboard' keypresses, althogh there are libraries out there to emulate a gamepad HID device.
 
 PINOUT:
 
 DB-15:
-
 pins 1,9,8,15: GND
-
 pins 4,5,12: +5V
-
 pin 7: Leonardo pin 4 (Joystick# 0 DATA signal)
-
 pin 2: Leonardo pin 2 (Joystick# 0 CLK signal)
-
 pin 10: Leonardo pin 3 (Joystick# 1 CLK signal)
-
 pin 14: Leonardo pin 6 (Joystick# 1 DATA signal)
-
 all other pins n/c
 
 
