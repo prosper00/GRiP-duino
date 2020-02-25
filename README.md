@@ -25,6 +25,8 @@ Work-in-progress. Currently status:
 
 -currently planning on mapping buttons to 'keyboard' keypresses, althogh there are libraries out there to emulate a gamepad HID device.
 
+-Added toggles to RXLED and TXLED to indicate activity on JS1/JS2. Das blinkenlights. Now it's a *real* project.
+
 
 PINOUT:
 
