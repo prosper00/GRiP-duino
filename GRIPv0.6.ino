@@ -20,12 +20,11 @@
   0 1 1 1 1 1 0 Select Start R2 Blue 0 L2 Green Yellow Red 0 L1 R1 Up Down 0 Right Left
 */
 
-
 //Includes. Need Keyboard for JS->KB emulation, and/or a lib for JS HID
 #include <Keyboard.h>
 
 /* Pin definitions. Use whatever pins suit your project, but
-   be mindful that the '0' buttons need to be connected to a
+   be mindful that the 'CLK' buttons need to be connected to a
    pin with a hardware interrupt. This may vary depending
    on the exact board model. I'm using a Leonardo */
 #define JS1CLKPin 2 // PD1, joystick 1 button 0, GRiP JS1 clock. Need an int 
@@ -125,13 +124,31 @@ void SendKeys(uint32_t packet, byte JSnum) { //JSnum = 1 for the first JS, and 2
     Serial1.print("JS1 event: ");
     Serial1.print(packet, BIN);
     Serial1.print(" usec:");
-    Serial1.println(micros() - time_0);
+    Serial1.print(micros() - time_0);
+    
+    if(packet==0x007C0000){  //if no buttons are pressed
+      digitalWrite(TXLED, HIGH);
+      Serial1.println(" LED OFF");
+    }
+    else{                    //if button(s) are pressed
+      digitalWrite(TXLED, LOW);
+      Serial1.println(" LED ON");
+    }
   }
   else if (JSnum == 2) {
     Serial1.print("JS2 event: ");
     Serial1.print(packet, BIN);
     Serial1.print(" usec:");
-    Serial1.println(micros() - time_0);
+    Serial1.print(micros() - time_0);
+
+    if(packet==0x007C0000){  //if no buttons are pressed
+      digitalWrite(RXLED, HIGH);
+      Serial1.println(" LED OFF");
+    }
+    else{                    //if button(s) are pressed
+      digitalWrite(RXLED, LOW);
+      Serial1.println(" LED ON");
+    }
   }
 }
 
