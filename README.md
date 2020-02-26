@@ -27,6 +27,7 @@ Work-in-progress. Currently status:
 
 -Added toggles to RXLED and TXLED to indicate activity on JS1/JS2. Das blinkenlights. Now it's a *real* project.
 
+-started work on SendKeys(). Added logic to determine which buttons are pressed. Need to implement a way to release individual buttons, and to not re-send current button presses when another button is pressed while one is held down
 
 PINOUT:
 
