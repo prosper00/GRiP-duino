@@ -23,29 +23,13 @@
 
 //Includes. Need Keyboard for JS->KB emulation, and/or a lib for JS HID
 #include <Keyboard.h>
-
-/* Pin definitions. Use whatever pins suit your project, but
-   be mindful that the 'CLK' buttons need to be connected to a
-   pin with a hardware interrupt. This may vary depending
-   on the exact board model. I'm using a Leonardo */
-#define JS1CLKPin 2 // PD1, joystick 1 button 0, GRiP JS1 clock. Need an int 
-#define JS1DATPin 4 // PD4, joystick 1 button 1, GRiP JS1 data
-#define JS2CLKPin 3 // PD0, joystick 2 button 0, GRiP JS2 clock. Need an int
-#define JS2DATPin 6 // PD7, joystick 2 button 1, GRiP JS2 data
-#define RXLED 17 // The Leonardo RX LED
-#define TXLED 30 // The Leonardo TX LED
-#define GRIPSZ 24 // GRiP packetsize is 24 bytes
+#include "grip.h" // pin definitions, grip packet definition
 
 /* Global definitions for the interrupt handler */
 volatile uint32_t JS1buff = 0; //the buffer where the handler shifts the bits
 volatile uint32_t JS2buff = 0;
 
-unsigned long time_0 = 0; //for tracking performance
-
 void setup() {
-  //  DDRD&=B01101100; //sets PORTD pins 0,1,4 and 7 (Board # D3, D2, D4, D6) to input
-  //  PORTD|=B10010011; //sets pullup on PORTD pins 0, 1, 4, 7 (Board # D3, D2, D4, D6)
-
   //enable all the inputs I'll need, and activate the internal pullup resistor.
   pinMode(JS1CLKPin, INPUT_PULLUP);
   pinMode(JS1DATPin, INPUT_PULLUP);
@@ -64,11 +48,11 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(JS1CLKPin), GETJS1BIT, FALLING);
   attachInterrupt(digitalPinToInterrupt(JS2CLKPin), GETJS2BIT, FALLING);
   delay(500); //wait for things to stabilize and the gamepads themselves to bootup and fill the buffers
+
+  Keyboard.begin();
 }
 
 void loop() {
-    time_0 = micros();
-    
     static uint32_t JS1packet, JS2packet; // static to preserve the variable for the next loop
     uint32_t JS1previous = JS1packet;
     uint32_t JS2previous = JS2packet;
@@ -79,14 +63,15 @@ void loop() {
     JS2Sync = JS2buff;
     interrupts();
     
+    //TODO: would this be significantly faster if I passed by reference instead of value?
     JS1packet = SyncPacket(JS1Sync, JS1previous);
     JS2packet = SyncPacket(JS2Sync, JS2previous);
 
     if (JS1packet != JS1previous) { //if no joypad keypresses have *changed*, we don't need to send anything
-      SendKeys(JS1packet, 1);
+      SendKeys(JS1packet, JS1previous, 1);
     }
     if (JS2packet != JS2previous) {
-      SendKeys(JS2packet, 2);
+      SendKeys(JS2packet, JS2previous, 2);
     }
 }
 
@@ -111,42 +96,88 @@ uint32_t SyncPacket(uint32_t buff,  uint32_t previous) {
 
 /*Ok, so, at this point we have a nicely aligned GRiP packet.
  * SendKeys() will parse and send it out as keypresses.
-       Packet format, left-to-right, is
-         0 1 1 1 1 1 0 Select Start R2 Blue 0 L2 Green Yellow Red 0 L1 R1 Up Down 0 Right Left
-       Mask for the bits we WANT is 000000011110111101111011, or 0x1EF7B
-       We could do some bitmap parsing to figure out which button(s) are pressed
-       i.e. 0x1EF7B means that ALL buttons are pressed, subtract a 1 from each appropriate position
-       to detect which buttons AREN'T pressed. However, it's unlikely that we can send 10+ simultaneous
-       keypresses vie USB HID (TODO: what IS the limit?)   */
-void SendKeys(uint32_t packet, byte JSnum) { //JSnum = 1 for the first JS, and 2 for the 2nd
+*/
+void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for the first JS, and 2 for the 2nd
+  /*bit change detection:
+   * packet^previous will tell us WHICH bits have changed, but not which direction to change them.
+   * if we set mask=packet^previous, and THEN do packet & mask, that will tell us to set or unset the button.
+   * can i do 'packet&=(packet^previous);' ?
+   */
+  
+  
   if (JSnum == 1) {
-    Serial1.print("JS1 event: ");
-    Serial1.print(packet, BIN);
-    Serial1.print(" usec:");
-    Serial1.print(micros() - time_0);
-    
     if(packet==0x007C0000){  //if no buttons are pressed
       digitalWrite(TXLED, HIGH);
-      Serial1.println(" LED OFF");
+      Serial1.println();
     }
     else{                    //if button(s) are pressed
       digitalWrite(TXLED, LOW);
-      Serial1.println(" LED ON");
+      if (packet & JS_left){
+        Serial1.print(" JS1: Left ");}
+      if (packet & JS_right){
+        Serial1.print(" JS1: Right ");}
+      if (packet & JS_up){
+        Serial1.print(" JS1: Up ");}
+      if (packet & JS_down){
+        Serial1.print(" JS1: Down ");}
+      if (packet & JS_l1){
+        Serial1.print(" JS1: L1 ");}
+      if (packet & JS_r1){
+        Serial1.print(" JS1: R1 ");}
+      if (packet & JS_l2){
+        Serial1.print(" JS1: L2 ");}
+      if (packet & JS_r2){
+        Serial1.print(" JS1: R2 ");}
+      if (packet & JS_start){
+        Serial1.print(" JS1: Start ");}
+      if (packet & JS_select){
+        Serial1.print(" JS1: Select ");}
+      if (packet & JS_red){
+        Serial1.print(" JS1: Red ");}
+      if (packet & JS_green){
+        Serial1.print(" JS1: Green ");}
+      if (packet & JS_blue){
+        Serial1.print(" JS1: Blue ");}
+      if (packet & JS_yellow){
+        Serial1.print(" JS1: Yellow ");}
     }
   }
-  else if (JSnum == 2) {
-    Serial1.print("JS2 event: ");
-    Serial1.print(packet, BIN);
-    Serial1.print(" usec:");
-    Serial1.print(micros() - time_0);
 
+  else if (JSnum == 2) {
     if(packet==0x007C0000){  //if no buttons are pressed
       digitalWrite(RXLED, HIGH);
-      Serial1.println(" LED OFF");
+      Serial1.println();
     }
     else{                    //if button(s) are pressed
       digitalWrite(RXLED, LOW);
-      Serial1.println(" LED ON");
+      if (packet & JS_left){
+        Serial1.print(" JS2: Left ");}
+      if (packet & JS_right){
+        Serial1.print(" JS2: Right ");}
+      if (packet & JS_up){
+        Serial1.print(" JS2: Up ");}
+      if (packet & JS_down){
+        Serial1.print(" JS2: Down ");}
+      if (packet & JS_l1){
+        Serial1.print(" JS2: L1 ");}
+      if (packet & JS_r1){
+        Serial1.print(" JS2: R1 ");}
+      if (packet & JS_l2){
+        Serial1.print(" JS2: L2 ");}
+      if (packet & JS_r2){
+        Serial1.print(" JS2: R2 ");}
+      if (packet & JS_start){
+        Serial1.print(" JS2: Start ");}
+      if (packet & JS_select){
+        Serial1.print(" JS2: Select ");}
+      if (packet & JS_red){
+        Serial1.print(" JS2: Red ");}
+      if (packet & JS_green){
+        Serial1.print(" JS2: Green ");}
+      if (packet & JS_blue){
+        Serial1.print(" JS2: Blue ");}
+      if (packet & JS_yellow){
+        Serial1.print(" JS2: Yellow ");}
     }
   }
 }
