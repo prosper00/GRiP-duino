@@ -1,9 +1,10 @@
 /*
   GRiP to HID joystick converter for the Gravis Gamepad Pro
 
-  Needs an Arduino or compatible device with native USB.
+  This code is built and tested on a Leonardo. 
   Devices built with an ATmega32u4 should work, but may need modification.
-  This code is built and tested on a Leonardo.
+  Faster devices may not work, as this depends on packet processing taking 
+  enough time for the interrupts to collect a whole new packet in the background
 
   The gamepad pro has a switch on the back, and has 3 modes.
   in mode 1, only two buttons per gamepad are used
@@ -11,9 +12,9 @@
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
   This code only supports two devices, mostly because I only HAVE two to test with. Also,
   we're already taxing the atmega with two devices (and my inefficient code)
-  Currently, polls about every 2ms, about 500Hz
+  Currently, polls about every 2ms, about 500Hz, with 2 gamepads.
 
-  I have no idea what will happen with gamepads in non-grip mode.
+  I have no idea what will happen with gamepads in non-grip mode. Probably nothing.
 
   GRiP mode uses button 0 as a 20-25kHz clock signal, and button 1 as data
   Data packet consists of 24 bytes, as follows:
@@ -34,14 +35,12 @@
 #define RXLED 17 // The Leonardo RX LED
 #define TXLED 30 // The Leonardo TX LED
 #define GRIPSZ 24 // GRiP packetsize is 24 bytes
-#define LOOP_INTERVAL 2000 //how many usec to loop (min). Too low, and we get bounce and bitstream issues
-                           //need to ensure we have enough time to fill up the buffers (about 1500usec)
 
 /* Global definitions for the interrupt handler */
 volatile uint32_t JS1buff = 0; //the buffer where the handler shifts the bits
 volatile uint32_t JS2buff = 0;
 
-unsigned long time_0 = 0; //for tracking performance, and our loop() delay
+unsigned long time_0 = 0; //for tracking performance
 
 void setup() {
   //  DDRD&=B01101100; //sets PORTD pins 0,1,4 and 7 (Board # D3, D2, D4, D6) to input
@@ -57,16 +56,17 @@ void setup() {
   pinMode(RXLED, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
+   //initialize serial at 2 meg. I assume that faster speeds means we spend less time on I/O.
+   //works fine with my CH341 adapter, though occasionally get some corruption or missed chars.
   Serial1.begin(2000000);  //This is the UART, on hardware pins 0 and 1.
   Serial1.println(F("Initialize Serial Hardware UART Pins"));
 
   attachInterrupt(digitalPinToInterrupt(JS1CLKPin), GETJS1BIT, FALLING);
   attachInterrupt(digitalPinToInterrupt(JS2CLKPin), GETJS2BIT, FALLING);
-  delay(5); //initial delay to fill up the buffers
+  delay(500); //wait for things to stabilize and the gamepads themselves to bootup and fill the buffers
 }
 
 void loop() {
-  if (micros() - time_0 >= LOOP_INTERVAL) { //Make sure we're not running any more often than LOOP_INTERVAL usec.
     time_0 = micros();
     
     static uint32_t JS1packet, JS2packet; // static to preserve the variable for the next loop
@@ -74,8 +74,11 @@ void loop() {
     uint32_t JS2previous = JS2packet;
     uint32_t JS1Sync, JS2Sync;
 
-    JS1Sync = JS1buff; //make a copy of the buffers, so that the interrupt doesn't overwrite it while we're parsing
+    noInterrupts();  //copying the buffers takes multiple cycles and we can't have the interrupts writing data
+    JS1Sync = JS1buff;
     JS2Sync = JS2buff;
+    interrupts();
+    
     JS1packet = SyncPacket(JS1Sync, JS1previous);
     JS2packet = SyncPacket(JS2Sync, JS2previous);
 
@@ -85,10 +88,6 @@ void loop() {
     if (JS2packet != JS2previous) {
       SendKeys(JS2packet, 2);
     }
-
-    JS1buff = 0; // clear the buffers
-    JS2buff = 0;
-  }
 }
 
 /*
@@ -100,7 +99,7 @@ void loop() {
 */
 uint32_t SyncPacket(uint32_t buff,  uint32_t previous) {
   byte i = 1;
-  while ((buff & 0x00FE1084) != 0x007C0000) { //FE1084 masks the bits we care about, 0x7C is our 'sync' pattern
+  while ((buff & 0x00FE1084) != 0x007C0000) { //FE1084 masks the bits we care about, 7C is our 'sync' pattern
     if (i > GRIPSZ) { // if we've rotated through the entire buffer and not found sync
       return previous;
     }
@@ -117,7 +116,7 @@ uint32_t SyncPacket(uint32_t buff,  uint32_t previous) {
        Mask for the bits we WANT is 000000011110111101111011, or 0x1EF7B
        We could do some bitmap parsing to figure out which button(s) are pressed
        i.e. 0x1EF7B means that ALL buttons are pressed, subtract a 1 from each appropriate position
-       to detect which buttons AREN'T pressed. However, it's unlikely that we can send 10 simultaneous
+       to detect which buttons AREN'T pressed. However, it's unlikely that we can send 10+ simultaneous
        keypresses vie USB HID (TODO: what IS the limit?)   */
 void SendKeys(uint32_t packet, byte JSnum) { //JSnum = 1 for the first JS, and 2 for the 2nd
   if (JSnum == 1) {
@@ -165,7 +164,7 @@ inline uint32_t rotl24(uint32_t n) {
 void GETJS1BIT () {
   JS1buff <<= 1;
   JS1buff |= ((PIND >> 4) & 1); //PIND4 is the register for JS1 data
-  //JS1buff|=digitalRead(JS1DATPin); //slower, but works. May need to tune the LOOP_INTERVAL
+  //JS1buff|=digitalRead(JS1DATPin); //slower, but works.
 }
 
 void GETJS2BIT () {
