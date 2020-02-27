@@ -3,31 +3,8 @@ Arduino project to convert 15-pin Gravis Gamepad Pro gamepads to USB-HID in digi
 
 NOTES:
 
-Work-in-progress. Currently status:
+Edit the keyboard:button mapping in the grip.h file to suit your needs.
 
--interrupt handlers written using registers for performance. The CLK buttons need an arduino pin with interrupt support. (see source code or notes below for pin assignments)
-
--supports two devices
-
--able to read out a bitstream from both
-
--able to detect the 'sync' pattern, and align the packet correctly
-
--Implemented change detection - only outputs *changes* to presses, instead of spitting out the whole packet every loop()
-
--Packets are output to the hardware USART
-
--Some initial performance optimization. It takes slightly longer to process a packet than it does to collect it, but it's still effectively 'polling' at 500Hz, which is plenty, probably 20x as fast as DOS games would have polled the joystick port. This will probably slow down some as I implement code to parse out the packets.
-
--No parsing of the packets, other than aligning them to the sync pattern. 
-
--Once parsing is completed, need to set up keymapping and USB output
-
--currently planning on mapping buttons to 'keyboard' keypresses, althogh there are libraries out there to emulate a gamepad HID device.
-
--Added toggles to RXLED and TXLED to indicate activity on JS1/JS2. Das blinkenlights. Now it's a *real* project.
-
--started work on SendKeys(). Added logic to determine which buttons are pressed. Need to implement a way to release individual buttons, and to not re-send current button presses when another button is pressed while one is held down
 
 PINOUT:
 
@@ -48,8 +25,6 @@ pin 14: Leonardo pin 6 (Joystick# 1 DATA signal)
 all other pins n/c
 
 
-GRiP to HID joystick converter for the Gravis Gamepad Pro
-
   Needs an Arduino or compatible device with native USB.
   Devices built with an ATmega32u4 should work, but may need modification.
   This code is built and tested on a Leonardo.
@@ -60,7 +35,6 @@ GRiP to HID joystick converter for the Gravis Gamepad Pro
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
   This code only supports two devices, mostly because I only HAVE two to test with. Also,
   we're already taxing the atmega with two devices (and my inefficient code)
-  Currently, polls about every 2ms, about 500Hz. 
 
   I have no idea what will happen with gamepads in non-grip mode.
 
