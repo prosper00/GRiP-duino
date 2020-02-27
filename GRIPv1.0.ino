@@ -98,13 +98,6 @@ uint32_t SyncPacket(uint32_t buff,  uint32_t previous) {
  * SendKeys() will parse and send it out as keypresses.
 */
 void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for the first JS, and 2 for the 2nd
-  /*bit change detection:
-   * packet^previous will tell us WHICH bits have changed, but not which direction to change them.
-   * if we set mask=packet^previous, and THEN do packet & mask, that will tell us to set or unset the button.
-   * can i do 'packet&=(packet^previous);' ?
-   *   0 1 1 1 1 1 0 Select Start R2 Blue 0 L2 Green Yellow Red 0 L1 R1 Up Down 0 Right Left
-   */
-
   /* this bit makes my brain hurt, but, what I'm doing here is compressing our 24-bit packet stuffed into
    *  a 32-bit ulong into 2 8-bit bytes by eliminating the '0's used for framing, and the 0111110 sync bit. 
    *  Really we only CARE about 14 bits and the AVR can only work with 8-bits at a time, so each 'if' 
@@ -112,12 +105,12 @@ void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for 
    *  I should move this into SyncPacket...
    */
   byte cmp_packet[2]={0,0}; 
-  cmp_packet[0] |= ( (packet&0b11) | ( (packet>>1) & 0b111100) | ( (packet>>2) & 0b11000000) );
-  cmp_packet[1] |= ( ( (packet>>10) & 0b11) | ( (packet >>11) & 0b111100) );
+  cmp_packet[0] = ( (packet & 0b11) | ( (packet>>1) & 0b111100) | ( (packet>>2) & 0b11000000) );
+  cmp_packet[1] = ( ( (packet>>10) & 0b11) | ( (packet >>11) & 0b111100) );
 
   byte cmp_previous[2]={0,0};
-  cmp_previous[0] |= ( (previous&0b11) | ( (previous>>1) & 0b111100) | ( (previous>>2) & 0b11000000) );
-  cmp_previous[1] |= ( ( (previous>>10) & 0b11) | ( (previous >>11) & 0b111100) );
+  cmp_previous[0] = ( (previous & 0b11) | ( (previous>>1) & 0b111100) | ( (previous>>2) & 0b11000000) );
+  cmp_previous[1] = ( ( (previous>>10) & 0b11) | ( (previous >>11) & 0b111100) );
 
   byte mask[2];
   mask[0]=cmp_packet[0]^cmp_previous[0];    //any bits that have *changed* since last time are masked
@@ -127,73 +120,101 @@ void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for 
       digitalWrite(TXLED, LOW);  // turn on the LED
       if (mask[0] & DECODE_left){     //if the 'left' d-pad state has changed
         if(mask[0] & cmp_packet[0]){  //if the bit in our packet is '1' 
+          Keyboard.press(JS1_left);
           Serial1.println(F(" JS1: Left Pressed "));}
         else{                         //otherwise...
-          Serial1.println(F(" JS1: Left Released "));}}
+         Keyboard.release(JS1_left);
+         Serial1.println(F(" JS1: Left Released "));}}
       if (mask[0] & DECODE_right){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_right);
           Serial1.println(F(" JS1: Right Pressed "));}
         else{
+          Keyboard.release(JS1_right);
           Serial1.println(F(" JS1: Right Released "));}}
       if (mask[0] & DECODE_down){  
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_down);
           Serial1.println(F(" JS1: Down Pressed "));}
         else{
+          Keyboard.release(JS1_down);
           Serial1.println(F(" JS1: Down Released "));}}
       if (mask[0] & DECODE_up){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_up);
           Serial1.println(F(" JS1: Up Pressed "));}
         else{
+          Keyboard.release(JS1_up);
           Serial1.println(F(" JS1: Up Released "));}}
       if (mask[0] & DECODE_r1){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_r1);
           Serial1.println(F(" JS1: R1 Pressed "));}
         else{
+          Keyboard.release(JS1_r1);
           Serial1.println(F(" JS1: R1 Released "));}}
       if (mask[0] & DECODE_l1){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_l1);
           Serial1.println(F(" JS1: L1 Pressed "));}
         else{
+          Keyboard.release(JS1_l1);
           Serial1.println(F(" JS1: L1 Released "));}}
       if (mask[0] & DECODE_red){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_red);
           Serial1.println(F(" JS1: Red Pressed "));}
         else{
+          Keyboard.release(JS1_red);
           Serial1.println(F(" JS1: Red Released "));}}
       if (mask[0] & DECODE_yellow){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS1_yellow);
           Serial1.println(F(" JS1: Yellow Pressed "));}
         else{
+          Keyboard.release(JS1_yellow);
           Serial1.println(F(" JS1: Yellow Released "));}}
       if (mask[1] & DECODE_green){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS1_green);
           Serial1.println(F(" JS1: Green Pressed "));}
         else{
+          Keyboard.release(JS1_green);
           Serial1.println(F(" JS1: Green Released "));}}
       if (mask[1] & DECODE_l2){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS1_l2);
           Serial1.println(F(" JS1: L2 Pressed "));}
         else{
+          Keyboard.release(JS1_l2);
           Serial1.println(F(" JS1: L2 Released "));}}
       if (mask[1] & DECODE_blue){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS1_blue);
           Serial1.println(F(" JS1: Blue Pressed "));}
         else{
+          Keyboard.release(JS1_blue);
           Serial1.println(F(" JS1: Blue Released "));}}
       if (mask[1] & DECODE_r2){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS1_r2);
           Serial1.println(F(" JS1: R2 Pressed "));}
         else{
+          Keyboard.release(JS1_r2);
           Serial1.println(F(" JS1: R2 Released "));}}
       if (mask[1] & DECODE_start){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS1_start);
           Serial1.println(F(" JS1: Start Pressed "));}
         else{
+          Keyboard.release(JS1_start);
           Serial1.println(F(" JS1: Start Released "));}}
       if (mask[1] & DECODE_select){
         if(mask[1] & cmp_packet[1]){
-          Serial1.println(F(" JS1: Select Pressed "));}
+         Keyboard.press(JS1_select);
+         Serial1.println(F(" JS1: Select Pressed "));}
         else{
+          Keyboard.release(JS1_select);
           Serial1.println(F(" JS1: Select Released "));}}
     if((cmp_packet[0]|cmp_packet[1])==0){  // if no buttons are pressed
       digitalWrite(TXLED, HIGH);           // turn of the LED
@@ -204,73 +225,101 @@ void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for 
       digitalWrite(RXLED, LOW);  // turn on the LED
       if (mask[0] & DECODE_left){     //if the 'left' d-pad state has changed
         if(mask[0] & cmp_packet[0]){  //if the bit in our packet is '1' 
+          Keyboard.press(JS2_left);
           Serial1.println(F(" JS2: Left Pressed "));}
         else{                         //otherwise...
+          Keyboard.release(JS2_left);
           Serial1.println(F(" JS2: Left Released "));}}
       if (mask[0] & DECODE_right){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_right);
           Serial1.println(F(" JS2: Right Pressed "));}
         else{
+          Keyboard.release(JS2_right);
           Serial1.println(F(" JS2: Right Released "));}}
       if (mask[0] & DECODE_down){  
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_down);
           Serial1.println(F(" JS2: Down Pressed "));}
         else{
+          Keyboard.release(JS2_down);
           Serial1.println(F(" JS2: Down Released "));}}
       if (mask[0] & DECODE_up){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_up);
           Serial1.println(F(" JS2: Up Pressed "));}
         else{
+          Keyboard.release(JS2_up);
           Serial1.println(F(" JS2: Up Released "));}}
       if (mask[0] & DECODE_r1){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_r1);
           Serial1.println(F(" JS2: R1 Pressed "));}
         else{
+          Keyboard.release(JS2_r1);
           Serial1.println(F(" JS2: R1 Released "));}}
       if (mask[0] & DECODE_l1){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_l1);
           Serial1.println(F(" JS2: L1 Pressed "));}
         else{
+          Keyboard.release(JS2_l1);
           Serial1.println(F(" JS2: L1 Released "));}}
       if (mask[0] & DECODE_red){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_red);
           Serial1.println(F(" JS2: Red Pressed "));}
         else{
+          Keyboard.release(JS2_red);
           Serial1.println(F(" JS2: Red Released "));}}
       if (mask[0] & DECODE_yellow){
         if(mask[0] & cmp_packet[0]){
+          Keyboard.press(JS2_yellow);
           Serial1.println(F(" JS2: Yellow Pressed "));}
         else{
+          Keyboard.release(JS2_yellow);
           Serial1.println(F(" JS2: Yellow Released "));}}
       if (mask[1] & DECODE_green){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_green);
           Serial1.println(F(" JS2: Green Pressed "));}
         else{
+          Keyboard.release(JS2_green);
           Serial1.println(F(" JS2: Green Released "));}}
       if (mask[1] & DECODE_l2){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_l2);
           Serial1.println(F(" JS2: L2 Pressed "));}
         else{
+          Keyboard.release(JS2_l2);
           Serial1.println(F(" JS2: L2 Released "));}}
       if (mask[1] & DECODE_blue){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_blue);
           Serial1.println(F(" JS2: Blue Pressed "));}
         else{
+          Keyboard.release(JS2_blue);
           Serial1.println(F(" JS2: Blue Released "));}}
       if (mask[1] & DECODE_r2){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_r2);
           Serial1.println(F(" JS2: R2 Pressed "));}
         else{
+          Keyboard.release(JS2_r2);
           Serial1.println(F(" JS2: R2 Released "));}}
       if (mask[1] & DECODE_start){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_start);
           Serial1.println(F(" JS2: Start Pressed "));}
         else{
+          Keyboard.release(JS2_start);
           Serial1.println(F(" JS2: Start Released "));}}
       if (mask[1] & DECODE_select){
         if(mask[1] & cmp_packet[1]){
+          Keyboard.press(JS2_select);
           Serial1.println(F(" JS2: Select Pressed "));}
         else{
+          Keyboard.release(JS2_select);
           Serial1.println(F(" JS2: Select Released "));}}
     if((cmp_packet[0]|cmp_packet[1])==0){  // if both halves of our packet are empty, no buttons are pressed
       digitalWrite(RXLED, HIGH);           // turn off the LED
