@@ -58,21 +58,24 @@ void loop() {
     uint32_t JS2previous = JS2packet;
     uint32_t JS1Sync, JS2Sync;
 
+    //process JS1 data
     noInterrupts();  //copying the buffers takes multiple cycles and we can't have the interrupts writing data
     JS1Sync = JS1buff;
-    JS2Sync = JS2buff;
     interrupts();
-    
-    //TODO: would this be significantly faster if I passed by reference instead of value?
     JS1packet = SyncPacket(JS1Sync, JS1previous);
-    JS2packet = SyncPacket(JS2Sync, JS2previous);
-
     if (JS1packet != JS1previous) { //if no joypad keypresses have *changed*, we don't need to send anything
       SendKeys(JS1packet, JS1previous, 1);
     }
+
+    //process JS2 data
+    noInterrupts();
+    JS2Sync = JS2buff;
+    interrupts();
+    JS2packet = SyncPacket(JS2Sync, JS2previous);
     if (JS2packet != JS2previous) {
       SendKeys(JS2packet, JS2previous, 2);
     }
+
 }
 
 /*
