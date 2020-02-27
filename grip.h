@@ -14,6 +14,24 @@
   0 1 1 1 1 1 0 Select Start R2 Blue 0 L2 Green Yellow Red 0 L1 R1 Up Down 0 Right Left
   Bitmap to express
  */
+#define DECODE_left   0b00000001
+#define DECODE_right  0b00000010
+#define DECODE_down   0b00000100
+#define DECODE_up     0b00001000
+#define DECODE_r1     0b00010000
+#define DECODE_l1     0b00100000
+#define DECODE_red    0b01000000
+#define DECODE_yellow 0b10000000
+
+#define DECODE_green  0b00000001
+#define DECODE_l2     0b00000010
+#define DECODE_blue   0b00000100
+#define DECODE_r2     0b00001000
+#define DECODE_start  0b00010000
+#define DECODE_select 0b00100000
+
+
+
 #define JS_left   0b00000000000000001
 #define JS_right  0b00000000000000010
         //framing 0b00000000000000100
