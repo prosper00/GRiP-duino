@@ -29,23 +29,3 @@
 #define DECODE_r2     0b00001000
 #define DECODE_start  0b00010000
 #define DECODE_select 0b00100000
-
-
-
-#define JS_left   0b00000000000000001
-#define JS_right  0b00000000000000010
-        //framing 0b00000000000000100
-#define JS_down   0b00000000000001000
-#define JS_up     0b00000000000010000
-#define JS_r1     0b00000000000100000
-#define JS_l1     0b00000000001000000
-        //framing 0b00000000010000000
-#define JS_red    0b00000000100000000
-#define JS_yellow 0b00000001000000000
-#define JS_green  0b00000010000000000
-#define JS_l2     0b00000100000000000
-        //framing 0b00001000000000000
-#define JS_blue   0b00010000000000000
-#define JS_r2     0b00100000000000000
-#define JS_start  0b01000000000000000
-#define JS_select 0b10000000000000000
