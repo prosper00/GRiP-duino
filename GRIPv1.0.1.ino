@@ -23,11 +23,10 @@
 
 //Includes. Need Keyboard for JS->KB emulation, and/or a lib for JS HID
 #include <Keyboard.h>
-#include "grip.h" // pin definitions, grip packet definition
+#include "grip.h" // pin definitions, grip packet definition and keymaps
 
 /* Global definitions for the interrupt handler */
-volatile uint32_t JS1buff = 0; //the buffer where the handler shifts the bits
-volatile uint32_t JS2buff = 0;
+volatile uint32_t JSbuff[2] = {0,0}; //the buffer where the handler shifts the bits
 
 void setup() {
   //enable all the inputs I'll need, and activate the internal pullup resistor.
@@ -52,29 +51,20 @@ void setup() {
 }
 
 void loop() {
-    static uint16_t JS1packet, JS2packet; // static to preserve the variable for the next loop
-    uint16_t JS1previous = JS1packet;
-    uint16_t JS2previous = JS2packet;
-    uint32_t JS1Sync, JS2Sync;
+    static uint16_t JSpacket[2]; // static to preserve the variable for the next loop
+    static bool JSnum;
+    uint16_t JSprevious = JSpacket[JSnum];
+    uint32_t JSsync;
 
-    //process JS1 data
     noInterrupts();  //copying the buffer takes multiple cycles and we can't have the interrupts writing data
-    JS1Sync = JS1buff;
+    JSsync = JSbuff[JSnum];
     interrupts();
-    JS1packet = SyncPacket(JS1Sync, JS1previous);
-    if (JS1packet != JS1previous) { //if no joypad keypresses have *changed*, we don't need to send anything
-      SendKeys(JS1packet, JS1previous, 0);
+    
+    JSpacket[JSnum] = SyncPacket(JSsync, JSprevious);
+    if (JSpacket[JSnum] != JSprevious) { //if no joypad keypresses have *changed*, we don't need to send anything
+      SendKeys(JSpacket[JSnum], JSprevious, JSnum);
     }
-
-    //process JS2 data
-    noInterrupts();
-    JS2Sync = JS2buff;
-    interrupts();
-    JS2packet = SyncPacket(JS2Sync, JS2previous);
-    if (JS2packet != JS2previous) {
-      SendKeys(JS2packet, JS2previous, 1);
-    }
-
+  JSnum=!JSnum;
 }
 
 /*
@@ -85,7 +75,9 @@ void loop() {
    error.
 */
 uint16_t SyncPacket(uint32_t buff,  uint16_t previous) {
-  byte i = 1;
+  byte i = 1; 
+  if (!buff)    //if the buffer is 'zero,' then assume no JS is connected, no further processing is needed.
+    return 0;
   while ((buff & 0x00FE1084) != 0x007C0000) { //FE1084 masks the bits we care about, 7C is our 'sync' pattern
     if (i > GRIPSZ) { // if we've rotated through the entire buffer and not found sync
       return previous;
@@ -93,6 +85,7 @@ uint16_t SyncPacket(uint32_t buff,  uint16_t previous) {
     buff = rotl24(buff); //rotate the entire buffer by 1 bit, and re-test
     i++;
   }
+  
   //Compress the packet down to fit into an int, by
   //stripping out the sync bits and the framing zeros.
   //hopefully, this is more efficient than passing around 32 bits
@@ -134,13 +127,13 @@ inline uint32_t rotl24(uint32_t n) {
  *  the end of the buffer and into oblivion.
 */
 void GETJS1BIT () {
-  JS1buff <<= 1;
-  JS1buff |= ((PIND >> 4) & 1); //PIND4 is the register for JS1 data
-  //JS1buff|=digitalRead(JS1DATPin); //slower, but works.
+  JSbuff[0] <<= 1;
+  JSbuff[0] |= ((PIND >> 4) & 1); //PIND4 is the register for JS1 data
+  //JSbuff[0]|=digitalRead(JS1DATPin); //slower, but works.
 }
 
 void GETJS2BIT () {
-  JS2buff <<= 1;
-  JS2buff |= ((PIND >> 7) & 1); //PIND7 is the register for JS2 data
-  //JS2buff|=!digitalRead(JS2DATPin); //slower, but works.
+  JSbuff[1] <<= 1;
+  JSbuff[1] |= ((PIND >> 7) & 1); //PIND7 is the register for JS2 data
+  //JSbuff[1]|=!digitalRead(JS2DATPin); //slower, but works.
 }
