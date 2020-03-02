@@ -10,7 +10,7 @@
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
   This code only supports mode 3, with one or two devices, mostly because I only HAVE two to test with. Also,
   we're probably already taxing the atmega with two devices (and my inefficient code)
-  Currently, polls about every 2ms, about 500Hz, with 2 gamepads.
+  Currently, reports about every 2ms, about 500Hz, with 2 gamepads.
 
   I have no idea what will happen with gamepads in non-grip mode. Probably nothing.
 
