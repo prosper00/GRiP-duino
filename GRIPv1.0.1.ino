@@ -3,15 +3,13 @@
 
   This code is built and tested on a Leonardo. 
   Devices built with an ATmega32u4 should work, but may need modification.
-  Faster devices may not work, as this depends on packet processing taking 
-  enough time for the interrupts to collect a whole new packet in the background
-
+  
   The gamepad pro has a switch on the back, and has 3 modes.
   in mode 1, only two buttons per gamepad are used
   in mode 2, all four buttons are used by gamepad 1, and gamepad 2 is disabled
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
-  This code only supports two devices, mostly because I only HAVE two to test with. Also,
-  we're already taxing the atmega with two devices (and my inefficient code)
+  This code only supports mode 3, with one or two devices, mostly because I only HAVE two to test with. Also,
+  we're probably already taxing the atmega with two devices (and my inefficient code)
   Currently, polls about every 2ms, about 500Hz, with 2 gamepads.
 
   I have no idea what will happen with gamepads in non-grip mode. Probably nothing.
