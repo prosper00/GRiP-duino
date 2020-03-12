@@ -10,11 +10,12 @@
   in mode 1, only two buttons per gamepad are used
   in mode 2, all four buttons are used by gamepad 1, and gamepad 2 is disabled
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
-  This code only supports two devices, mostly because I only HAVE two to test with. Also,
-  we're already taxing the atmega with two devices (and my inefficient code)
-  Currently, it polls about every 4.5ms (220Hz) with 2 gamepads, or about 9ms and 110Hz for each pad. 
-  Seems sufficient.
-
+  This code only supports two devices, mostly because I only HAVE two to test with.  I measured 
+  this taking about 220usec per cycle through loop(), which means we're reporting at 4500Hz with 
+  two gamepads connected, for a refresh rate of 2250Hz for each gamepad. This seems sufficient :) 
+  so I'm not planning on implementing any further optimizations. This is about 3500ops per poll,
+  which seems reasonable.
+  
   I have no idea what will happen with gamepads in non-grip mode. Probably nothing.
 
   GRiP mode uses button 0 as a 20-25kHz clock signal, and button 1 as data
