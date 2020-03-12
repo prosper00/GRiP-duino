@@ -27,15 +27,17 @@ all other pins n/c
 
   Needs an Arduino or compatible device with native USB.
   Devices built with an ATmega32u4 should work, but may need modification.
-  This code is built and tested on a Leonardo.
+  This code is built and tested on a Leonardo, and a clone 'pro micro' with a 32u4.
 
   The gamepad pro has a switch on the back, and has 3 modes.
   in mode 1, only two buttons per gamepad are used
   in mode 2, all four buttons are used by gamepad 1, and gamepad 2 is disabled
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
   This code only supports two devices, mostly because I only HAVE two to test with. Also,
-  we're already taxing the atmega with two devices (and my inefficient code)
-
+  we're already taxing the atmega with two devices.
+  
+  I measured this taking about 4.5ms per cycle through loop(), which means we're reporting at 220Hz with two gamepads connected, for a refresh rate of 110Hz for each gamepad. This seems sufficient, and is doubtless (much) faster than original '90s hardware (and software) would have used. 
+  
   I have no idea what will happen with gamepads in non-grip mode.
 
   GRiP mode uses button 0 as a 20-25kHz clock signal, and button 1 as data
