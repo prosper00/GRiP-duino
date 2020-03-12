@@ -1,16 +1,19 @@
+#pragma GCC optimize ("-O3")
 /*
   GRiP to HID joystick converter for the Gravis Gamepad Pro
 
-  This code is built and tested on a Leonardo. 
+  This code is built and tested on a Leonardo. Also works with a Chinese 32u4 'Pro Micro' clone.
   Devices built with an ATmega32u4 should work, but may need modification.
-  
+  Would probably also work on an STM32duino board, (not tested)
+
   The gamepad pro has a switch on the back, and has 3 modes.
   in mode 1, only two buttons per gamepad are used
   in mode 2, all four buttons are used by gamepad 1, and gamepad 2 is disabled
   in mode 3 (GRiP), up to four gamepads can be used at once, and all 10 buttons are available each
-  This code only supports mode 3, with one or two devices, mostly because I only HAVE two to test with. Also,
-  we're probably already taxing the atmega with two devices (and my inefficient code)
-  Currently, reports about every 2ms, about 500Hz, with 2 gamepads.
+  This code only supports two devices, mostly because I only HAVE two to test with. Also,
+  we're already taxing the atmega with two devices (and my inefficient code)
+  Currently, it polls about every 4.5ms (220Hz) with 2 gamepads, or about 9ms and 110Hz for each pad. 
+  Seems sufficient.
 
   I have no idea what will happen with gamepads in non-grip mode. Probably nothing.
 
@@ -38,8 +41,8 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
    //initialize USB-serial
-  Serial.begin(230400);  //This is the USB virtual UART.
-  Serial.println(F("Initialize Serial Hardware UART Pins"));
+//  Serial.begin(230400);  //This is the USB virtual UART.
+//  Serial.println(F("Initialize Serial Hardware UART Pins"));
 
   attachInterrupt(digitalPinToInterrupt(JS1CLKPin), GETJS1BIT, FALLING);
   attachInterrupt(digitalPinToInterrupt(JS2CLKPin), GETJS2BIT, FALLING);
@@ -49,19 +52,19 @@ void setup() {
 }
 
 void loop() {
-    static uint16_t JSpacket[2]; // static to preserve the variable for the next loop
-    static bool JSnum;
-    uint16_t JSprevious = JSpacket[JSnum];
-    uint32_t JSsync;
+  static uint16_t JSpacket[2]; // static to preserve the variable for the next loop
+  static bool JSnum;
+  uint16_t JSprevious = JSpacket[JSnum];
+  uint32_t JSsync;
 
-    noInterrupts();  //copying the buffer takes multiple cycles and we can't have the interrupts writing data
+  noInterrupts();  //copying the buffer takes multiple cycles and we can't have the interrupts writing data
     JSsync = JSbuff[JSnum];
-    interrupts();
-    
-    JSpacket[JSnum] = SyncPacket(JSsync, JSprevious);
-    if (JSpacket[JSnum] != JSprevious) { //if no joypad keypresses have *changed*, we don't need to send anything
-      SendKeys(JSpacket[JSnum], JSprevious, JSnum);
-    }
+  interrupts();
+  
+  JSpacket[JSnum] = SyncPacket(JSsync, JSprevious);
+  if (JSpacket[JSnum] != JSprevious) //if no joypad keypresses have *changed*, we don't need to send anything
+    SendKeys(JSpacket[JSnum], JSprevious, JSnum);
+
   JSnum=!JSnum;
 }
 
@@ -96,21 +99,19 @@ uint16_t SyncPacket(uint32_t buff,  uint16_t previous) {
 /*Ok, so, at this point we have a nicely aligned GRiP packet.
  * SendKeys() will parse and send it out as keypresses.
 */
-void SendKeys(uint32_t packet, uint32_t previous, byte JSnum) { //JSnum = 1 for the first JS, and 2 for the 2nd
+void SendKeys(uint16_t packet, uint16_t previous, byte JSnum) { //JSnum = 0 for the first JS, and 1 for the 2nd
 
-  uint16_t mask=packet^previous;
+  uint16_t mask=packet^previous;   // this will set any bits that have *changed* to a '1'.
 
-  for (int i = 0; i < 14; i++) {
-    if (mask & 0x01) {
-      if (packet & 0x01) {
+  for (byte i = 0; i < 14; i++) {
+    if (mask & 0x01){
+      if (packet & 0x01)
         Keyboard.press(JS_keys[JSnum][i]);
-      }
-      else {
+      else
         Keyboard.release(JS_keys[JSnum][i]);
-      }
     }
     mask >>= 1;
-    packet  >>= 1;
+    packet >>= 1;
   }
 }
 
@@ -135,3 +136,5 @@ void GETJS2BIT () {
   JSbuff[1] |= ((PIND >> 7) & 1); //PIND7 is the register for JS2 data
   //JSbuff[1]|=!digitalRead(JS2DATPin); //slower, but works.
 }
+
+
