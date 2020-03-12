@@ -36,7 +36,7 @@ all other pins n/c
   This code only supports two devices, mostly because I only HAVE two to test with. Also,
   we're already taxing the atmega with two devices.
   
-  I measured this taking about 4.5ms per cycle through loop(), which means we're reporting at 220Hz with two gamepads connected, for a refresh rate of 110Hz for each gamepad. This seems sufficient, and is doubtless (much) faster than original '90s hardware (and software) would have used. 
+  I measured this taking about 220usec per cycle through loop(), which means we're reporting at 4500Hz with two gamepads connected, for a refresh rate of 2250Hz for each gamepad. This seems sufficient :) so I'm not planning on implementing any further optimizations. This is about 3500ops per poll, which seems reasonable.
   
   I have no idea what will happen with gamepads in non-grip mode.
 
