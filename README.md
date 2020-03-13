@@ -10,9 +10,9 @@ PINOUT:
 
 DB-15:
 
-pins 1,9,8,15: GND
+pins 1,9,8,15: +5V
 
-pins 4,5,12: +5V
+pins 4,5,12: GND
 
 pin 7: Leonardo pin 4 (Joystick# 0 DATA signal)
 
